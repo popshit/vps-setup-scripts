@@ -110,22 +110,7 @@ If you used the direct Desktop command:
 
 Never upload or paste the private key into a VPS setup prompt. Only paste the public key.
 
-## Step 3: Copy The Setup Scripts To The VPS
-
-Run this on your own computer, still inside the `vps-setup-scripts` folder.
-
-These commands are not key generation. They use `scp` to copy two script files from your computer to the VPS:
-
-```powershell
-scp .\scripts\setup-vps.sh root@YOUR_SERVER_IP:/root/setup-vps.sh
-scp .\scripts\setup-vps-interactive.sh root@YOUR_SERVER_IP:/root/setup-vps-interactive.sh
-```
-
-Replace `YOUR_SERVER_IP` with the real VPS IP address.
-
-If this is your first login to the VPS, `scp` usually asks for the VPS root password.
-
-## Step 4: Login To The VPS As Root
+## Step 3: Login To The VPS As Root
 
 Run this on your own computer:
 
@@ -135,15 +120,15 @@ ssh root@YOUR_SERVER_IP
 
 After this command succeeds, your terminal is operating on the VPS.
 
-## Step 5: Run The Interactive Setup On The VPS
+## Step 4: Start Interactive Setup On The VPS
 
-Run this on the VPS:
+Recommended: run this one-command installer in the VPS root SSH session:
 
 ```bash
-chmod +x /root/setup-vps.sh
-chmod +x /root/setup-vps-interactive.sh
-sudo bash /root/setup-vps-interactive.sh
+apt-get update && apt-get install -y curl && bash <(curl -fsSL https://raw.githubusercontent.com/popshit/vps-setup-scripts/main/install.sh)
 ```
+
+This downloads the setup scripts to `/root` and starts the interactive setup.
 
 The interactive script asks for:
 
@@ -162,7 +147,32 @@ The interactive script asks for:
 
 When asked for the SSH public key, paste the public key from Step 2. It should start with `ssh-ed25519`.
 
-## Step 6: Test The New Login
+## Manual Copy Option
+
+You usually do not need this if the one-command installer works.
+
+Run this on your own computer, inside the `vps-setup-scripts` folder.
+
+These commands are not key generation. They use `scp` to copy two script files from your computer to the VPS:
+
+```powershell
+scp .\scripts\setup-vps.sh root@YOUR_SERVER_IP:/root/setup-vps.sh
+scp .\scripts\setup-vps-interactive.sh root@YOUR_SERVER_IP:/root/setup-vps-interactive.sh
+```
+
+Replace `YOUR_SERVER_IP` with the real VPS IP address.
+
+If this is your first login to the VPS, `scp` usually asks for the VPS root password.
+
+If you copied the scripts manually with `scp`, run this on the VPS:
+
+```bash
+chmod +x /root/setup-vps.sh
+chmod +x /root/setup-vps-interactive.sh
+sudo bash /root/setup-vps-interactive.sh
+```
+
+## Step 5: Test The New Login
 
 Do not close the old root SSH session yet.
 
@@ -240,8 +250,16 @@ Cloud providers usually offer a web console, recovery mode, or rescue boot. Befo
 
 Do not close your existing root SSH session until the new login command succeeds.
 
-If the new SSH port accepts a TCP connection but immediately closes before login, or if you cannot connect after several failed password attempts, fail2ban may have banned your current IP. Wait for the ban to expire, or use the provider console and run:
+If the new SSH port accepts a TCP connection but immediately closes before login, or if you cannot connect after several failed password attempts, fail2ban may have banned your current IP. Wait for the ban to expire, or use the provider web console and run:
 
 ```bash
 fail2ban-client set sshd unbanip YOUR_CLIENT_IP
+```
+
+To find and clear all currently banned IPs for the SSH jail from the provider console:
+
+```bash
+fail2ban-client status sshd
+fail2ban-client unban --all
+systemctl reload ssh || systemctl reload sshd
 ```
