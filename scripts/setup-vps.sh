@@ -6,7 +6,7 @@ SCRIPT_NAME="$(basename "$0")"
 usage() {
   cat <<'USAGE'
 Usage:
-  sudo ./harden-vps.sh --user USER --ssh-port PORT --public-key "ssh-ed25519 AAAA..." [options]
+  sudo ./setup-vps.sh --user USER --ssh-port PORT --public-key "ssh-ed25519 AAAA..." [options]
 
 Required:
   --user USER                 New sudo user to create or update.
@@ -25,7 +25,7 @@ Options:
   -h, --help                  Show help.
 
 Example:
-  sudo ./harden-vps.sh \
+  sudo ./setup-vps.sh \
     --user deploy \
     --ssh-port 2222 \
     --public-key "ssh-ed25519 AAAA_REPLACE_ME" \
@@ -133,7 +133,7 @@ ensure_user() {
 configure_sshd() {
   local port="$1"
   local config_dir="/etc/ssh/sshd_config.d"
-  local config_file="${config_dir}/99-vps-hardening.conf"
+  local config_file="${config_dir}/99-vps-setup.conf"
   local root_login="no"
   local password_auth="no"
   local allow_users="$NEW_USER"
@@ -201,7 +201,7 @@ configure_ufw() {
 
 configure_fail2ban() {
   local port="$1"
-  local jail_file="/etc/fail2ban/jail.d/sshd-hardening.local"
+  local jail_file="/etc/fail2ban/jail.d/sshd-setup.local"
 
   log "Configuring fail2ban"
   cat > "$jail_file" <<EOF

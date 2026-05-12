@@ -1,18 +1,18 @@
-# VPS Hardening Scripts
+# VPS Setup Scripts
 
 Debian 12 first, with Ubuntu support where the package and service names match.
 
 This repository gives you two scripts:
 
 - `scripts/generate-local-key.sh`: run on your own computer to create an SSH key pair.
-- `scripts/harden-vps.sh`: run as `root` on a fresh Debian 12 or Ubuntu VPS to create a sudo user, install security tools, configure SSH key login, enable UFW, enable fail2ban, and optionally add swap.
-- `scripts/harden-vps-interactive.sh`: run on the VPS if you prefer a question-and-answer setup instead of typing all arguments manually.
+- `scripts/setup-vps.sh`: run as `root` on a fresh Debian 12 or Ubuntu VPS to create a sudo user, install security tools, configure SSH key login, enable UFW, enable fail2ban, and optionally add swap.
+- `scripts/setup-vps-interactive.sh`: run on the VPS if you prefer a question-and-answer setup instead of typing all arguments manually.
 
 The most important safety rule: keep the current SSH session open until you have tested a second login using the new user, new SSH port, and private key.
 
 ## What The Script Changes
 
-`scripts/harden-vps.sh` can do the following:
+`scripts/setup-vps.sh` can do the following:
 
 - Create a new sudo user.
 - Install your public key into that user's `authorized_keys`.
@@ -43,7 +43,7 @@ On Windows PowerShell, use:
 powershell -ExecutionPolicy Bypass -File .\scripts\generate-local-key.ps1 vps-debian12
 ```
 
-It prints a public key beginning with `ssh-ed25519`. You will pass that public key into the VPS hardening script.
+It prints a public key beginning with `ssh-ed25519`. You will pass that public key into the VPS setup script.
 
 The private key stays on your computer under `~/.ssh`.
 
@@ -52,8 +52,8 @@ The private key stays on your computer under `~/.ssh`.
 From your own computer:
 
 ```bash
-scp scripts/harden-vps.sh root@YOUR_SERVER_IP:/root/harden-vps.sh
-scp scripts/harden-vps-interactive.sh root@YOUR_SERVER_IP:/root/harden-vps-interactive.sh
+scp scripts/setup-vps.sh root@YOUR_SERVER_IP:/root/setup-vps.sh
+scp scripts/setup-vps-interactive.sh root@YOUR_SERVER_IP:/root/setup-vps-interactive.sh
 ```
 
 Then SSH into the VPS as root:
@@ -62,14 +62,14 @@ Then SSH into the VPS as root:
 ssh root@YOUR_SERVER_IP
 ```
 
-## Step 3: Run The Hardening Script
+## Step 3: Run The Setup Script
 
 For beginners, the interactive version is easiest:
 
 ```bash
-chmod +x /root/harden-vps.sh
-chmod +x /root/harden-vps-interactive.sh
-sudo /root/harden-vps-interactive.sh
+chmod +x /root/setup-vps.sh
+chmod +x /root/setup-vps-interactive.sh
+sudo /root/setup-vps-interactive.sh
 ```
 
 It asks for the new user, SSH port, public key, swap size, and yes/no choices for firewall ports and security tools.
@@ -79,8 +79,8 @@ For repeatable automation, use explicit arguments:
 Example for Debian 12:
 
 ```bash
-chmod +x /root/harden-vps.sh
-sudo /root/harden-vps.sh \
+chmod +x /root/setup-vps.sh
+sudo /root/setup-vps.sh \
   --user deploy \
   --ssh-port 2222 \
   --public-key "ssh-ed25519 AAAA_REPLACE_WITH_YOUR_PUBLIC_KEY" \
@@ -106,7 +106,7 @@ If this works, your new user and SSH key are ready.
 For a new Debian 12 VPS, this is a sensible baseline:
 
 ```bash
-sudo /root/harden-vps.sh \
+sudo /root/setup-vps.sh \
   --user deploy \
   --ssh-port 2222 \
   --public-key "ssh-ed25519 AAAA_REPLACE_WITH_YOUR_PUBLIC_KEY" \
@@ -139,6 +139,6 @@ The new sudo user is safer for daily administration than logging in directly as 
 
 ## Recovery Advice
 
-Cloud providers usually offer a web console, recovery mode, or rescue boot. Before running any SSH hardening script, confirm you know where that feature is in your VPS control panel.
+Cloud providers usually offer a web console, recovery mode, or rescue boot. Before running any SSH setup script, confirm you know where that feature is in your VPS control panel.
 
 Do not close your existing root SSH session until the new login command succeeds.

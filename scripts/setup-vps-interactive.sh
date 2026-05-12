@@ -2,15 +2,15 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HARDEN_SCRIPT="${SCRIPT_DIR}/harden-vps.sh"
+SETUP_SCRIPT="${SCRIPT_DIR}/setup-vps.sh"
 
 usage() {
   cat <<'USAGE'
 Usage:
-  sudo bash scripts/harden-vps-interactive.sh
+  sudo bash scripts/setup-vps-interactive.sh
 
-This interactive wrapper asks for the important VPS hardening options, then
-calls scripts/harden-vps.sh with explicit arguments.
+This interactive wrapper asks for the important VPS setup options, then
+calls scripts/setup-vps.sh with explicit arguments.
 USAGE
 }
 
@@ -83,17 +83,17 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
 fi
 
 if [[ $# -gt 0 ]]; then
-  die "this wrapper does not accept arguments. Use ${HARDEN_SCRIPT} for non-interactive mode."
+  die "this wrapper does not accept arguments. Use ${SETUP_SCRIPT} for non-interactive mode."
 fi
 
 if [[ "${EUID}" -ne 0 ]]; then
-  die "run as root, for example: sudo bash scripts/harden-vps-interactive.sh"
+  die "run as root, for example: sudo bash scripts/setup-vps-interactive.sh"
 fi
 
-[[ -f "$HARDEN_SCRIPT" ]] || die "could not find harden-vps.sh at: $HARDEN_SCRIPT"
+[[ -f "$SETUP_SCRIPT" ]] || die "could not find setup-vps.sh at: $SETUP_SCRIPT"
 
 cat <<'INTRO'
-VPS hardening interactive setup
+VPS interactive setup
 
 Keep your current SSH session open after this script finishes. Open a second
 terminal and test the new SSH login before closing the old root session.
@@ -157,7 +157,7 @@ fi
 echo
 echo "About to run:"
 printf '  '
-printf '%q ' "$HARDEN_SCRIPT" "${args[@]}"
+printf '%q ' "$SETUP_SCRIPT" "${args[@]}"
 printf '\n\n'
 
 if ! prompt_yes_no "Continue" "n"; then
@@ -165,4 +165,4 @@ if ! prompt_yes_no "Continue" "n"; then
   exit 0
 fi
 
-bash "$HARDEN_SCRIPT" "${args[@]}"
+bash "$SETUP_SCRIPT" "${args[@]}"

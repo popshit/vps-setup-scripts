@@ -56,8 +56,8 @@ echo
 echo "Private key:"
 echo "  $key_path"
 echo
-echo "Public key to pass into harden-vps.sh:"
+echo "Public key to pass into setup-vps.sh:"
 cat "${key_path}.pub"
 echo
-echo "Example login after server hardening:"
+echo "Example login after server setup:"
 echo "  ssh -i $key_path -p 2222 deploy@YOUR_SERVER_IP"

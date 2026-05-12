@@ -30,8 +30,8 @@ Write-Host ''
 Write-Host 'Private key:'
 Write-Host "  $keyPath"
 Write-Host ''
-Write-Host 'Public key to pass into harden-vps.sh:'
+Write-Host 'Public key to pass into setup-vps.sh:'
 Get-Content -LiteralPath $pubPath
 Write-Host ''
-Write-Host 'Example login after server hardening:'
+Write-Host 'Example login after server setup:'
 Write-Host "  ssh -i $keyPath -p 2222 deploy@YOUR_SERVER_IP"
