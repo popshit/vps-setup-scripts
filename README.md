@@ -10,6 +10,17 @@ This repository gives you two scripts:
 
 The most important safety rule: keep the current SSH session open until you have tested a second login using the new user, new SSH port, and private key.
 
+## Get This Repository
+
+On your own computer, clone the repository and enter its folder:
+
+```bash
+git clone https://github.com/popshit/vps-setup-scripts.git
+cd vps-setup-scripts
+```
+
+All commands below assume you are already inside the cloned `vps-setup-scripts` folder. If you downloaded the repository as a ZIP file instead, open a terminal in the extracted folder before running the commands.
+
 ## What The Script Changes
 
 `scripts/setup-vps.sh` can do the following:
@@ -34,18 +45,27 @@ The script validates SSH config with `sshd -t` before reloading SSH.
 Run this on your own computer, not on the VPS:
 
 ```bash
-bash scripts/generate-local-key.sh vps-debian12
+bash scripts/generate-local-key.sh my-vps
 ```
 
 On Windows PowerShell, use:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\generate-local-key.ps1 vps-debian12
+powershell -ExecutionPolicy Bypass -File .\scripts\generate-local-key.ps1 my-vps
 ```
 
 It prints a public key beginning with `ssh-ed25519`. You will pass that public key into the VPS setup script.
 
-The private key stays on your computer under `~/.ssh`.
+The private key stays on your computer under `~/.ssh`. The key name `my-vps` is only an example. Use a name that helps you remember the server, for example `blog-prod`, `debian-vps-1`, or `client-api`.
+
+After generation, the key files are:
+
+```text
+~/.ssh/my-vps_ed25519
+~/.ssh/my-vps_ed25519.pub
+```
+
+On Windows, `~` means your user folder, for example `C:\Users\YourName`.
 
 ## Step 2: Copy The Server Script To The VPS
 
@@ -96,7 +116,7 @@ Use a different SSH port for each VPS if you prefer. Ports from `1024` to `65535
 Open a new terminal on your own computer:
 
 ```bash
-ssh -i ~/.ssh/vps-debian12_ed25519 -p 2222 deploy@YOUR_SERVER_IP
+ssh -i ~/.ssh/my-vps_ed25519 -p 2222 deploy@YOUR_SERVER_IP
 ```
 
 If this works, your new user and SSH key are ready.
