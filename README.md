@@ -1,64 +1,79 @@
 # VPS Setup Scripts
 
-Debian 12 first, with Ubuntu support where the package and service names match.
+Debian 12 first, with Ubuntu support where package and service names match.
 
-This repository gives you two scripts:
+This repository helps you do a basic VPS security setup:
 
-- `scripts/generate-local-key.sh`: run on your own computer to create an SSH key pair.
-- `scripts/setup-vps.sh`: run as `root` on a fresh Debian 12 or Ubuntu VPS to create a sudo user, install security tools, configure SSH key login, enable UFW, enable fail2ban, and optionally add swap.
-- `scripts/setup-vps-interactive.sh`: run on the VPS if you prefer a question-and-answer setup instead of typing all arguments manually.
+- Generate an SSH key on your own computer.
+- Copy setup scripts to a fresh VPS.
+- Create a non-root sudo user.
+- Configure SSH key login.
+- Change the SSH port.
+- Disable root SSH login by default.
+- Disable password SSH login by default.
+- Enable UFW firewall.
+- Optionally allow HTTP and HTTPS.
+- Enable fail2ban.
+- Optionally add swap.
+- Enable unattended security upgrades.
 
-The most important safety rule: keep the current SSH session open until you have tested a second login using the new user, new SSH port, and private key.
+Important: keep your current root SSH session open until you have tested a second login using the new user, new SSH port, and private key.
 
-## Get This Repository
+## Requirements
 
-On your own computer, clone the repository and enter its folder:
+On your own computer:
 
-```bash
+- Git
+- OpenSSH Client, including `ssh`, `scp`, and `ssh-keygen`
+
+On the VPS:
+
+- Debian 12, or Ubuntu with similar package names
+- Root SSH access for the first setup
+- Provider rescue console or web console access, in case you misconfigure SSH
+
+On Windows, run the local commands in PowerShell. CMD also works for most commands, but PowerShell is the recommended path in this README.
+
+## Step 1: Download This Repository
+
+Run this on your own computer:
+
+```powershell
 git clone https://github.com/popshit/vps-setup-scripts.git
 cd vps-setup-scripts
 ```
 
-All commands below assume you are already inside the cloned `vps-setup-scripts` folder. If you downloaded the repository as a ZIP file instead, open a terminal in the extracted folder before running the commands.
+Path rule: there is no fixed required path. The repository is downloaded into whichever folder you run `git clone` from.
 
-## What The Script Changes
+Example: if you run it from `C:\Users\YourName`, the repo becomes:
 
-`scripts/setup-vps.sh` can do the following:
-
-- Create a new sudo user.
-- Install your public key into that user's `authorized_keys`.
-- Configure SSH with a drop-in file under `/etc/ssh/sshd_config.d/`.
-- Move SSH to a custom port.
-- Disable root SSH login.
-- Disable password SSH login.
-- Install and enable UFW.
-- Allow the new SSH port through UFW.
-- Optionally allow HTTP and HTTPS.
-- Install and configure fail2ban for SSH.
-- Add a swap file.
-- Enable unattended security upgrades.
-
-The script validates SSH config with `sshd -t` before reloading SSH.
-
-## Step 1: Generate A Local SSH Key
-
-Run this on your own computer, not on the VPS:
-
-```bash
-bash scripts/generate-local-key.sh my-vps
+```text
+C:\Users\YourName\vps-setup-scripts
 ```
 
-On Windows PowerShell, use:
+All later local commands assume your terminal is already inside the `vps-setup-scripts` folder.
+
+## Step 2: Generate A Local SSH Key
+
+Run this on your own computer, not on the VPS.
+
+Windows PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\generate-local-key.ps1 my-vps
 ```
 
-It prints a public key beginning with `ssh-ed25519`. You will pass that public key into the VPS setup script.
+macOS, Linux, Git Bash, or WSL:
 
-The private key stays on your computer under `~/.ssh`. The key name `my-vps` is only an example. Use a name that helps you remember the server, for example `blog-prod`, `debian-vps-1`, or `client-api`.
+```bash
+bash scripts/generate-local-key.sh my-vps
+```
 
-After generation, the key files are:
+`my-vps` is only an example key name. Use a name that helps you remember the server, such as `blog-prod`, `debian-vps-1`, or `client-api`.
+
+The script prints a public key beginning with `ssh-ed25519`. Save that public key text. You will paste it into the VPS setup script later.
+
+The generated key files are:
 
 ```text
 ~/.ssh/my-vps_ed25519
@@ -67,63 +82,81 @@ After generation, the key files are:
 
 On Windows, `~` means your user folder, for example `C:\Users\YourName`.
 
-## Step 2: Copy The Server Script To The VPS
+Private key: `~/.ssh/my-vps_ed25519`
 
-From your own computer:
+Public key: `~/.ssh/my-vps_ed25519.pub`
 
-```bash
-scp scripts/setup-vps.sh root@YOUR_SERVER_IP:/root/setup-vps.sh
-scp scripts/setup-vps-interactive.sh root@YOUR_SERVER_IP:/root/setup-vps-interactive.sh
+Never upload or paste the private key into a VPS setup prompt. Only paste the public key.
+
+## Step 3: Copy The Setup Scripts To The VPS
+
+Run this on your own computer, still inside the `vps-setup-scripts` folder.
+
+These commands are not key generation. They use `scp` to copy two script files from your computer to the VPS:
+
+```powershell
+scp .\scripts\setup-vps.sh root@YOUR_SERVER_IP:/root/setup-vps.sh
+scp .\scripts\setup-vps-interactive.sh root@YOUR_SERVER_IP:/root/setup-vps-interactive.sh
 ```
 
-Then SSH into the VPS as root:
+Replace `YOUR_SERVER_IP` with the real VPS IP address.
 
-```bash
+If this is your first login to the VPS, `scp` usually asks for the VPS root password.
+
+## Step 4: Login To The VPS As Root
+
+Run this on your own computer:
+
+```powershell
 ssh root@YOUR_SERVER_IP
 ```
 
-## Step 3: Run The Setup Script
+After this command succeeds, your terminal is operating on the VPS.
 
-For beginners, the interactive version is easiest:
+## Step 5: Run The Interactive Setup On The VPS
+
+Run this on the VPS:
 
 ```bash
 chmod +x /root/setup-vps.sh
 chmod +x /root/setup-vps-interactive.sh
-sudo /root/setup-vps-interactive.sh
+sudo bash /root/setup-vps-interactive.sh
 ```
 
-It asks for the new user, SSH port, public key, swap size, and yes/no choices for firewall ports and security tools.
+The interactive script asks for:
 
-For repeatable automation, use explicit arguments:
+- New sudo username, default `deploy`
+- New SSH port, default `2222`
+- Your public SSH key
+- Whether to create swap
+- Swap size, default `2G`
+- Whether to allow HTTP on port `80`
+- Whether to allow HTTPS on port `443`
+- Whether to enable fail2ban
+- Whether to enable unattended security upgrades
+- Whether to temporarily keep root SSH login
+- Whether to temporarily keep password SSH login
+- Whether to reset existing UFW firewall rules
 
-Example for Debian 12:
+When asked for the SSH public key, paste the public key from Step 2. It should start with `ssh-ed25519`.
 
-```bash
-chmod +x /root/setup-vps.sh
-sudo /root/setup-vps.sh \
-  --user deploy \
-  --ssh-port 2222 \
-  --public-key "ssh-ed25519 AAAA_REPLACE_WITH_YOUR_PUBLIC_KEY" \
-  --swap-size 2G \
-  --allow-http \
-  --allow-https
-```
+## Step 6: Test The New Login
 
-Use a different SSH port for each VPS if you prefer. Ports from `1024` to `65535` are usually safest for custom SSH.
+Do not close the old root SSH session yet.
 
-## Step 4: Test Before Closing The Old Session
+Open a new terminal on your own computer and test:
 
-Open a new terminal on your own computer:
-
-```bash
+```powershell
 ssh -i ~/.ssh/my-vps_ed25519 -p 2222 deploy@YOUR_SERVER_IP
 ```
 
-If this works, your new user and SSH key are ready.
+Adjust the command if you chose a different key name, SSH port, or sudo username.
 
-## Recommended Defaults
+If this login works, the new user and SSH key are ready.
 
-For a new Debian 12 VPS, this is a sensible baseline:
+## Non-Interactive Usage
+
+For automation, run `setup-vps.sh` directly on the VPS:
 
 ```bash
 sudo /root/setup-vps.sh \
@@ -135,7 +168,11 @@ sudo /root/setup-vps.sh \
   --allow-https
 ```
 
-If the VPS will not host a website yet, omit `--allow-http` and `--allow-https`.
+By default, password SSH login is disabled. To temporarily keep password SSH login enabled, add:
+
+```bash
+--keep-password-ssh
+```
 
 ## HTTP And HTTPS Firewall Options
 
@@ -145,9 +182,23 @@ If the VPS will not host a website yet, omit `--allow-http` and `--allow-https`.
 
 If the VPS is only for SSH, scripts, databases behind private access, or learning Linux, keep both closed. If the VPS will run a website, reverse proxy, public API, or Let's Encrypt certificate flow, open the one you need. Most public websites eventually need both `80` and `443`.
 
+## What The Main Script Changes
+
+`scripts/setup-vps.sh` does the actual server changes:
+
+- Creates or updates the sudo user.
+- Installs your public key into that user's `authorized_keys`.
+- Writes SSH config to `/etc/ssh/sshd_config.d/99-vps-setup.conf`.
+- Validates SSH config with `sshd -t`.
+- Reloads SSH.
+- Configures UFW.
+- Configures fail2ban.
+- Optionally creates swap.
+- Enables unattended security upgrades.
+
 ## Notes For Linux Beginners
 
-SSH is the remote login service. The script switches it from password login to key login.
+SSH is the remote login service. This setup switches SSH from password login to key login by default.
 
 UFW is a simple firewall frontend. It blocks inbound connections except the ports you allow.
 
