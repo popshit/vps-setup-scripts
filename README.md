@@ -222,6 +222,7 @@ If the VPS is only for SSH, scripts, databases behind private access, or learnin
 - Grants that user passwordless sudo through `/etc/sudoers.d/`.
 - Installs your public key into that user's `authorized_keys`.
 - Writes SSH config to `/etc/ssh/sshd_config.d/99-vps-setup.conf`.
+- Comments out earlier active `Port` lines in SSH config so the old SSH port is not left enabled.
 - Validates SSH config with `sshd -t`.
 - Reloads SSH.
 - Configures UFW.

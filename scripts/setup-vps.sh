@@ -149,6 +149,17 @@ configure_sshd() {
 
   install -d -m 755 "$config_dir"
 
+  local ssh_config_file
+  for ssh_config_file in /etc/ssh/sshd_config /etc/ssh/sshd_config.d/*.conf; do
+    [[ -f "$ssh_config_file" ]] || continue
+    [[ "$ssh_config_file" == "$config_file" ]] && continue
+
+    if grep -Eq '^[[:space:]]*Port[[:space:]]+' "$ssh_config_file"; then
+      cp -a "$ssh_config_file" "${ssh_config_file}.bak.$(date +%Y%m%d%H%M%S)"
+      sed -i -E 's/^([[:space:]]*Port[[:space:]]+)/# setup-vps disabled duplicate SSH Port: \1/' "$ssh_config_file"
+    fi
+  done
+
   if [[ -f "$config_file" ]]; then
     cp -a "$config_file" "${config_file}.bak.$(date +%Y%m%d%H%M%S)"
   fi
@@ -285,8 +296,8 @@ Done.
 Test from a new terminal before closing this session:
   ssh -p $SSH_PORT $NEW_USER@YOUR_SERVER_IP
 
-If you generated your key with scripts/generate-local-key.sh:
-  ssh -i ~/.ssh/vps-debian12_ed25519 -p $SSH_PORT $NEW_USER@YOUR_SERVER_IP
+If you generated or chose a private key:
+  ssh -i PATH_TO_PRIVATE_KEY -p $SSH_PORT $NEW_USER@YOUR_SERVER_IP
 
 Important:
   - Keep this current root session open until the new login works.
