@@ -105,6 +105,7 @@ apt_install() {
 ensure_user() {
   local user="$1"
   local home_dir
+  local sudoers_file="/etc/sudoers.d/90-${user}-nopasswd"
 
   if id "$user" >/dev/null 2>&1; then
     log "User exists: $user"
@@ -114,6 +115,10 @@ ensure_user() {
   fi
 
   usermod -aG sudo "$user"
+  printf '%s\n' "${user} ALL=(ALL:ALL) NOPASSWD:ALL" > "$sudoers_file"
+  chmod 440 "$sudoers_file"
+  visudo -cf "$sudoers_file" >/dev/null
+
   home_dir="$(getent passwd "$user" | cut -d: -f6)"
   [[ -n "$home_dir" ]] || die "could not determine home directory for $user"
 

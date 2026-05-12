@@ -219,6 +219,7 @@ If the VPS is only for SSH, scripts, databases behind private access, or learnin
 `scripts/setup-vps.sh` does the actual server changes:
 
 - Creates or updates the sudo user.
+- Grants that user passwordless sudo through `/etc/sudoers.d/`.
 - Installs your public key into that user's `authorized_keys`.
 - Writes SSH config to `/etc/ssh/sshd_config.d/99-vps-setup.conf`.
 - Validates SSH config with `sshd -t`.
@@ -243,6 +244,8 @@ fail2ban watches login failures and temporarily bans abusive IP addresses.
 Swap is disk-backed emergency memory. It helps small VPS instances survive memory spikes, but it is much slower than real RAM.
 
 The new sudo user is safer for daily administration than logging in directly as root.
+
+This setup gives the new user passwordless sudo because the script creates the user without a Linux password. After you are comfortable managing the VPS, you can set a password with `sudo passwd deploy` and adjust `/etc/sudoers.d/90-deploy-nopasswd` if you prefer password-required sudo.
 
 ## Recovery Advice
 
