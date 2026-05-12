@@ -218,6 +218,10 @@ If the VPS is only for SSH, scripts, databases behind private access, or learnin
 - Optionally creates swap.
 - Enables unattended security upgrades.
 
+When fail2ban is configured, the script automatically adds the current SSH client IP to `ignoreip`. This avoids banning the administrator who is running the initial setup because of earlier failed password attempts.
+
+If `/swapfile` already exists and is active, the script leaves it alone.
+
 ## Notes For Linux Beginners
 
 SSH is the remote login service. This setup switches SSH from password login to key login by default.
@@ -235,3 +239,9 @@ The new sudo user is safer for daily administration than logging in directly as 
 Cloud providers usually offer a web console, recovery mode, or rescue boot. Before running any SSH setup script, confirm you know where that feature is in your VPS control panel.
 
 Do not close your existing root SSH session until the new login command succeeds.
+
+If the new SSH port accepts a TCP connection but immediately closes before login, or if you cannot connect after several failed password attempts, fail2ban may have banned your current IP. Wait for the ban to expire, or use the provider console and run:
+
+```bash
+fail2ban-client set sshd unbanip YOUR_CLIENT_IP
+```

@@ -202,6 +202,11 @@ configure_ufw() {
 configure_fail2ban() {
   local port="$1"
   local jail_file="/etc/fail2ban/jail.d/sshd-setup.local"
+  local ignore_ip="127.0.0.1/8 ::1"
+
+  if [[ "${SSH_CLIENT:-}" =~ ^([0-9a-fA-F:.]+)[[:space:]] ]]; then
+    ignore_ip="${ignore_ip} ${BASH_REMATCH[1]}"
+  fi
 
   log "Configuring fail2ban"
   cat > "$jail_file" <<EOF
@@ -209,6 +214,7 @@ configure_fail2ban() {
 enabled = true
 backend = systemd
 port = $port
+ignoreip = $ignore_ip
 maxretry = 5
 findtime = 10m
 bantime = 1h
