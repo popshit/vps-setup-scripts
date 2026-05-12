@@ -21,7 +21,9 @@ if ((Test-Path -LiteralPath $keyPath) -or (Test-Path -LiteralPath $pubPath)) {
   throw "Key already exists: $keyPath"
 }
 
-& $sshKeygen.Source -t ed25519 -a 100 -f $keyPath -C $KeyName -N ''
+# Windows PowerShell 5 can drop a native empty-string argument. OpenSSH accepts
+# the quoted empty passphrase form here, which keeps this script non-interactive.
+& $sshKeygen.Source -t ed25519 -a 100 -f $keyPath -C $KeyName -N '""'
 if ($LASTEXITCODE -ne 0) {
   throw 'ssh-keygen.exe failed.'
 }

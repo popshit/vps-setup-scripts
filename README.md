@@ -63,6 +63,13 @@ Windows PowerShell:
 powershell -ExecutionPolicy Bypass -File .\scripts\generate-local-key.ps1 my-vps
 ```
 
+If you see `ssh-keygen.exe failed`, pull the latest repository version and try again:
+
+```powershell
+git pull
+powershell -ExecutionPolicy Bypass -File .\scripts\generate-local-key.ps1 my-vps
+```
+
 macOS, Linux, Git Bash, or WSL:
 
 ```bash
