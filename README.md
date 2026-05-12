@@ -23,7 +23,7 @@ Important: keep your current root SSH session open until you have tested a secon
 
 On your own computer:
 
-- Git
+- Git, recommended but optional
 - OpenSSH Client, including `ssh`, `scp`, and `ssh-keygen`
 
 On the VPS:
@@ -36,7 +36,7 @@ On Windows, run the local commands in PowerShell. CMD also works for most comman
 
 ## Step 1: Download This Repository
 
-Run this on your own computer:
+Recommended, if Git is installed. Run this on your own computer:
 
 ```powershell
 git clone https://github.com/popshit/vps-setup-scripts.git
@@ -51,7 +51,9 @@ Example: if you run it from `C:\Users\YourName`, the repo becomes:
 C:\Users\YourName\vps-setup-scripts
 ```
 
-All later local commands assume your terminal is already inside the `vps-setup-scripts` folder.
+If Git is not installed, open this repository in your browser, click `Code`, choose `Download ZIP`, extract it, then open PowerShell in the extracted `vps-setup-scripts` folder.
+
+All later local commands that use `.\scripts\...` assume your terminal is already inside the `vps-setup-scripts` folder.
 
 ## Step 2: Generate A Local SSH Key
 
@@ -63,11 +65,11 @@ Windows PowerShell:
 powershell -ExecutionPolicy Bypass -File .\scripts\generate-local-key.ps1 my-vps
 ```
 
-If you see `ssh-keygen.exe failed`, pull the latest repository version and try again:
+If you do not want to use the helper script, run this direct `ssh-keygen` command instead. It creates the key files on your Desktop:
 
 ```powershell
-git pull
-powershell -ExecutionPolicy Bypass -File .\scripts\generate-local-key.ps1 my-vps
+ssh-keygen -t ed25519 -a 100 -f "$env:USERPROFILE\Desktop\my-vps_ed25519" -C "my-vps" -N '""'
+Get-Content "$env:USERPROFILE\Desktop\my-vps_ed25519.pub"
 ```
 
 macOS, Linux, Git Bash, or WSL:
@@ -87,11 +89,24 @@ The generated key files are:
 ~/.ssh/my-vps_ed25519.pub
 ```
 
+If you used the direct Desktop command, the generated key files are:
+
+```text
+Desktop\my-vps_ed25519
+Desktop\my-vps_ed25519.pub
+```
+
 On Windows, `~` means your user folder, for example `C:\Users\YourName`.
 
-Private key: `~/.ssh/my-vps_ed25519`
+If you used the helper script:
 
-Public key: `~/.ssh/my-vps_ed25519.pub`
+- Private key: `~/.ssh/my-vps_ed25519`
+- Public key: `~/.ssh/my-vps_ed25519.pub`
+
+If you used the direct Desktop command:
+
+- Private key: `Desktop\my-vps_ed25519`
+- Public key: `Desktop\my-vps_ed25519.pub`
 
 Never upload or paste the private key into a VPS setup prompt. Only paste the public key.
 
