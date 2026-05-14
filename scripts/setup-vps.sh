@@ -8,12 +8,15 @@ usage() {
 Usage:
   sudo ./setup-vps.sh --user USER --ssh-port PORT --public-key "ssh-ed25519 AAAA..." [options]
 
-Required:
+Required for the default full setup:
   --user USER                 New sudo user to create or update.
-  --ssh-port PORT             SSH port to configure, usually 1024-65535.
+  --ssh-port PORT             SSH port to configure or protect with UFW/fail2ban.
   --public-key KEY            Public SSH key to install for USER.
 
 Options:
+  --skip-user                 Do not create or update a sudo user.
+  --skip-ssh                  Do not write SSH server hardening config.
+  --skip-ufw                  Do not configure UFW firewall rules.
   --swap-size SIZE            Create swap file with SIZE, for example 1G or 2G. Default: 0.
   --allow-http                Allow inbound 80/tcp in UFW.
   --allow-https               Allow inbound 443/tcp in UFW.
@@ -141,11 +144,14 @@ configure_sshd() {
   local config_file="${config_dir}/99-vps-setup.conf"
   local root_login="no"
   local password_auth="no"
-  local allow_users="$NEW_USER"
+  local allow_users=""
 
   [[ "$KEEP_ROOT_SSH" == "1" ]] && root_login="prohibit-password"
   [[ "$KEEP_PASSWORD_SSH" == "1" ]] && password_auth="yes"
-  [[ "$KEEP_ROOT_SSH" == "1" ]] && allow_users="$NEW_USER root"
+  if [[ "$SKIP_USER" == "0" ]]; then
+    allow_users="$NEW_USER"
+    [[ "$KEEP_ROOT_SSH" == "1" ]] && allow_users="$NEW_USER root"
+  fi
 
   install -d -m 755 "$config_dir"
 
@@ -172,8 +178,11 @@ PasswordAuthentication $password_auth
 KbdInteractiveAuthentication no
 PermitRootLogin $root_login
 X11Forwarding no
-AllowUsers $allow_users
 EOF
+
+  if [[ -n "$allow_users" ]]; then
+    printf 'AllowUsers %s\n' "$allow_users" >> "$config_file"
+  fi
 
   /usr/sbin/sshd -t || die "sshd config validation failed"
 
@@ -293,22 +302,42 @@ print_summary() {
 
 Done.
 
+Important:
+  - Keep this current root session open until any new login path works.
+  - If login fails, use the provider web console or rescue mode to inspect SSH and UFW.
+EOF
+
+  if [[ "$SKIP_USER" == "0" && "$CONFIGURE_SSH" == "1" ]]; then
+    cat <<EOF
+
 Test from a new terminal before closing this session:
   ssh -p $SSH_PORT $NEW_USER@YOUR_SERVER_IP
 
 If you generated or chose a private key:
   ssh -i PATH_TO_PRIVATE_KEY -p $SSH_PORT $NEW_USER@YOUR_SERVER_IP
-
-Important:
-  - Keep this current root session open until the new login works.
-  - If login fails, use the provider web console or rescue mode to inspect SSH and UFW.
 EOF
+  elif [[ "$SKIP_USER" == "0" ]]; then
+    cat <<EOF
+
+This run created or updated user "$NEW_USER", but skipped SSH server changes.
+Test that user with your current SSH port and the private key that matches the installed public key.
+EOF
+  elif [[ "$CONFIGURE_SSH" == "1" ]]; then
+    cat <<EOF
+
+This run changed SSH server settings but did not create a new user.
+Confirm your existing login method still works before closing this session.
+EOF
+  fi
 }
 
 NEW_USER=""
 SSH_PORT=""
 PUBLIC_KEY=""
 SWAP_SIZE="0"
+SKIP_USER="0"
+CONFIGURE_SSH="1"
+CONFIGURE_UFW="1"
 ALLOW_HTTP="0"
 ALLOW_HTTPS="0"
 INSTALL_FAIL2BAN="1"
@@ -330,6 +359,18 @@ while [[ $# -gt 0 ]]; do
     --public-key)
       PUBLIC_KEY="${2:-}"
       shift 2
+      ;;
+    --skip-user)
+      SKIP_USER="1"
+      shift
+      ;;
+    --skip-ssh)
+      CONFIGURE_SSH="0"
+      shift
+      ;;
+    --skip-ufw)
+      CONFIGURE_UFW="0"
+      shift
       ;;
     --swap-size)
       SWAP_SIZE="${2:-}"
@@ -378,22 +419,51 @@ require_command awk
 require_command grep
 require_command systemctl
 
-[[ -n "$NEW_USER" ]] || die "--user is required"
-[[ -n "$SSH_PORT" ]] || die "--ssh-port is required"
-[[ -n "$PUBLIC_KEY" ]] || die "--public-key is required"
+if [[ "$SKIP_USER" == "0" ]]; then
+  [[ -n "$NEW_USER" ]] || die "--user is required unless --skip-user is set"
+  [[ -n "$PUBLIC_KEY" ]] || die "--public-key is required unless --skip-user is set"
+fi
 
-validate_user "$NEW_USER"
-validate_port "$SSH_PORT"
-validate_public_key "$PUBLIC_KEY"
+if [[ "$CONFIGURE_SSH" == "1" || "$CONFIGURE_UFW" == "1" || "$INSTALL_FAIL2BAN" == "1" ]]; then
+  [[ -n "$SSH_PORT" ]] || die "--ssh-port is required when SSH, UFW, or fail2ban configuration is enabled"
+fi
+
+if [[ "$SKIP_USER" == "1" && "$CONFIGURE_SSH" == "1" && "$KEEP_ROOT_SSH" == "0" ]]; then
+  die "--skip-user with SSH hardening requires --keep-root-ssh, otherwise this run could remove root SSH access without adding a replacement user"
+fi
+
+if [[ "$SKIP_USER" == "0" ]]; then
+  validate_user "$NEW_USER"
+  validate_public_key "$PUBLIC_KEY"
+fi
+
+if [[ -n "$SSH_PORT" ]]; then
+  validate_port "$SSH_PORT"
+fi
+
 validate_swap_size "$SWAP_SIZE"
 detect_os
 
 log "Installing base packages"
 apt_install openssh-server sudo ufw curl ca-certificates vim
 
-ensure_user "$NEW_USER"
-configure_sshd "$SSH_PORT"
-configure_ufw "$SSH_PORT"
+if [[ "$SKIP_USER" == "0" ]]; then
+  ensure_user "$NEW_USER"
+else
+  log "Skipping sudo user and SSH key setup"
+fi
+
+if [[ "$CONFIGURE_SSH" == "1" ]]; then
+  configure_sshd "$SSH_PORT"
+else
+  log "Skipping SSH server configuration"
+fi
+
+if [[ "$CONFIGURE_UFW" == "1" ]]; then
+  configure_ufw "$SSH_PORT"
+else
+  log "Skipping UFW configuration"
+fi
 
 if [[ "$INSTALL_FAIL2BAN" == "1" ]]; then
   apt_install fail2ban

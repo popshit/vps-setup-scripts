@@ -130,22 +130,31 @@ apt-get update && apt-get install -y curl && bash <(curl -fsSL https://raw.githu
 
 This downloads the setup scripts to `/root` and starts the interactive setup.
 
-The interactive script asks for:
+The interactive script asks each setup module first. Answer `n` to skip that module, or answer `y` to enter its values.
 
+At value prompts, type `back` to return to that module's yes/no question.
+
+The interactive script can ask for:
+
+- Whether to create or update a sudo user
 - New sudo username, default `deploy`
-- New SSH port, default `2222`
 - Your public SSH key
-- Whether to create swap
-- Swap size, default `2G`
-- Whether to allow HTTP on port `80`
-- Whether to allow HTTPS on port `443`
-- Whether to enable fail2ban
-- Whether to enable unattended security upgrades
+- Whether to configure SSH port and login hardening
+- New SSH port, default `2222`
 - Whether to temporarily keep root SSH login
 - Whether to temporarily keep password SSH login
+- Whether to configure UFW firewall rules
+- Whether to allow HTTP on port `80`
+- Whether to allow HTTPS on port `443`
 - Whether to reset existing UFW firewall rules
+- Whether to enable fail2ban
+- Whether to enable unattended security upgrades
+- Whether to create swap
+- Swap size, default `2G`
 
 When asked for the SSH public key, paste the public key from Step 2. It should start with `ssh-ed25519`.
+
+Before it changes the server, the script prints a final list of all selected changes and asks for confirmation.
 
 ## Manual Copy Option
 
@@ -206,6 +215,27 @@ By default, password SSH login is disabled. To temporarily keep password SSH log
 --keep-password-ssh
 ```
 
+To skip specific modules in non-interactive mode:
+
+```bash
+--skip-user
+--skip-ssh
+--skip-ufw
+--no-fail2ban
+--no-unattended-upgrades
+```
+
+Example: only create swap and enable unattended security upgrades:
+
+```bash
+sudo /root/setup-vps.sh \
+  --skip-user \
+  --skip-ssh \
+  --skip-ufw \
+  --no-fail2ban \
+  --swap-size 2G
+```
+
 ## HTTP And HTTPS Firewall Options
 
 `--allow-http` opens port `80/tcp`. This is used for normal unencrypted web traffic and for some certificate verification flows.
@@ -229,6 +259,8 @@ If the VPS is only for SSH, scripts, databases behind private access, or learnin
 - Configures fail2ban.
 - Optionally creates swap.
 - Enables unattended security upgrades.
+
+In interactive mode, each major item can be skipped before the script starts applying changes.
 
 When fail2ban is configured, the script automatically adds the current SSH client IP to `ignoreip`. This avoids banning the administrator who is running the initial setup because of earlier failed password attempts.
 
